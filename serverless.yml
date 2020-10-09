@@ -1,0 +1,91 @@
+
+service: serverless-demo-app
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-2  
+
+functions:
+
+  productSalesAnalysis:
+    handler: product-sales-analysis/index.handler
+    description: Product Sales Analysis
+    memorySize: 128
+    events:
+      - schedule: 
+          rate: cron(0 18 */7 * ? *)
+          enabled: true
+    environment:
+      PRODUCT_PROMOTION_QUEUE_NAME:
+        Fn::GetAtt:
+          - productPromotionProcessQueue
+          - QueueName
+      PRODUCT_SALES_TABLE_NAME:
+        Ref: productSalesTable
+
+  productPromotion:
+    handler: product-promotion/index.handler
+    description: Product Promotion
+    memorySize: 128
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - productPromotionProcessQueue
+              - Arn
+        batchSize: 10
+    environment:
+      PRODUCT_PROMOTION_TABLE_NAME:
+        Ref: productPromotionTable
+
+  getProductPromotionAPI:
+    handler: get-product-promotion-api/index.getPromotion
+    description: Get Product Promition API
+    memorySize: 128
+    events:
+      - http:
+          path: product-promotion
+          method: get
+    environment:
+      PRODUCT_PROMOTION_TABLE_NAME:
+        Ref: productPromotionTable
+
+resources:
+
+  Resources:
+  
+    productPromotionProcessQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:service}-product-promotion-queue-${self:provider.stage}
+        VisibilityTimeout: 300
+
+    productSalesTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        TableName: productSalesTable
+        AttributeDefinitions:
+          - AttributeName: salesId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: salesId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    productPromotionTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        TableName: productPromotionTable
+        AttributeDefinitions:
+          - AttributeName: promotionCode
+            AttributeType: S
+        KeySchema:
+          - AttributeName: promotionCode
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
