@@ -1,6 +1,46 @@
+//
+//  Product Promotion Generation Function
+//
+//  This is a mock function as part of the serverless app demo, it creates promotion and save into DynamoDB. 
+//  It takes product code from input and construct promotion
+//
+//  Environment variables:
+//    PRODUCT_PROMOTION_TABLE_NAME - DynamoDB table name of product protmotion storage
+//    REGION - AWS region
+//
+//  Logic:
+//    This lambda function randomly create number of promotion code for each incoming product code
+//    and then insert into DynamoDB.
+//
+//  Input:
+//    List of records from event - event.Records
+//    The body of each record is a JSON object
+//      {
+//        type: "object"
+//        properties: {
+//          productCode: { type: "string"}
+//        },
+//        required: ["productCode"] 
+//      }
+//
+//  Output:
+//    Promotion's JSON object structure:
+//      {
+//        type: "object"
+//        properties: {
+//          promotionCode: { type: "string"}
+//          productCode: { type: "string"}
+//          amount: { type: "number"}
+//          expiry: { type: "number"}
+//        },
+//        required: ["promotionCode, productCode, amount, expiry"] 
+//      }
+//
+//
+
 'use strict';
 const aws = require('aws-sdk');
-aws.config.update({region: 'us-east-2'});
+aws.config.update({region: process.env.AWS_REGION});
 const { v4: uuidv4 } = require('uuid');
 const faker = require('faker');
 const moment = require('moment');
@@ -16,25 +56,18 @@ module.exports.handler = async event => {
 
   for (let eventRecord of event.Records) {   
       try {
-          if (eventRecord.eventSource == "aws:sqs") {
-            const message = JSON.parse(eventRecord.body);
-            console.log("Message: " + JSON.stringify(message));                    
-            await formulatePromotion(message.productCode);
-          }
+          const message = JSON.parse(eventRecord.body);
+          console.log("Message: " + JSON.stringify(message));                    
+          await formulatePromotion(message.productCode);
       
       } catch (e) {
         console.error(e);
+        throw e;
       }
 
   }
 
-  return {
-    statusCode: 200,
-    body: {
-        success: true
-    }
-  };
-
+  return { message: 'Function executed successfully!', event };
 }
 
 // Create promotion items by random and insert into promotion table

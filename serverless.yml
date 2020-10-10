@@ -4,26 +4,30 @@ service: serverless-demo-app
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: dev
-  region: us-east-2  
+  region: us-east-2
+
+package:
+  individually: true
+  exclude:
+    - "**/*"  # quotes(") are needed
 
 functions:
-
   productSalesAnalysis:
     handler: product-sales-analysis/index.handler
     description: Product Sales Analysis
     memorySize: 128
     events:
       - schedule: 
-          rate: cron(0 18 */7 * ? *)
+          rate: cron(0 22 * * ? *)
           enabled: true
     environment:
       PRODUCT_PROMOTION_QUEUE_NAME:
         Fn::GetAtt:
           - productPromotionProcessQueue
           - QueueName
-      PRODUCT_SALES_TABLE_NAME:
-        Ref: productSalesTable
+    package:
+      include:
+        - product-sales-analysis/**
 
   productPromotion:
     handler: product-promotion/index.handler
@@ -39,9 +43,12 @@ functions:
     environment:
       PRODUCT_PROMOTION_TABLE_NAME:
         Ref: productPromotionTable
+    package:
+      include:
+        - product-promotion/**
 
   getProductPromotionAPI:
-    handler: get-product-promotion-api/index.getPromotion
+    handler: product-promotion-api/index.handler
     description: Get Product Promition API
     memorySize: 128
     events:
@@ -51,6 +58,9 @@ functions:
     environment:
       PRODUCT_PROMOTION_TABLE_NAME:
         Ref: productPromotionTable
+    package:
+      include:
+        - product-promotion-api/**
 
 resources:
 
