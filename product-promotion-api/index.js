@@ -26,7 +26,7 @@ module.exports.handler = async event => {
     const queryItemList = await retrievePromotion();
     return {
       statusCode: 200,
-      body: queryItemList
+      body: JSON.stringify(queryItemList)
     };
   } catch (e) {
     return {
@@ -34,6 +34,7 @@ module.exports.handler = async event => {
       body: "Sorry, something goes wrong"
     };
   }
+
 };
 
 const retrievePromotion = async () => {

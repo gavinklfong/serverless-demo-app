@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.771.0",
-    "faker": "^5.1.0"
+    "faker": "^5.1.0",
+    "moment": "^2.29.1"
   }
 }
